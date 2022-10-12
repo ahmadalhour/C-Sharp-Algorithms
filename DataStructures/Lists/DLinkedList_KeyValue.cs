@@ -3,153 +3,203 @@ using System.Collections.Generic;
 
 using DataStructures.Common;
 
-namespace DataStructures.Lists
+namespace DataStructures.Lists;
+
+/// <summary>
+/// The Doubly-Linked List Node class.
+/// </summary>
+/// <typeparam name="T">Type</typeparam>
+public class DLinkedListNode<TKey, TValue> : IComparable<DLinkedListNode<TKey, TValue>> where TKey : IComparable<TKey>
+{
+    public DLinkedListNode() : this(default, default) { }
+    public DLinkedListNode(TKey key, TValue value) : this(key, value, next: null, null) { }
+    public DLinkedListNode(TKey key, TValue value, DLinkedListNode<TKey, TValue> next, DLinkedListNode<TKey, TValue> previous)
+    {
+        Key = key;
+        Value = value;
+        Next = next;
+        Previous = previous;
+    }
+
+    public virtual TKey Key { get; set; }
+
+    public virtual TValue Value { get; set; }
+
+    public virtual DLinkedListNode<TKey, TValue> Next { get; set; }
+
+    public virtual DLinkedListNode<TKey, TValue> Previous { get; set; }
+
+    public int CompareTo(DLinkedListNode<TKey, TValue> other)
+    {
+        if (other == null) return -1;
+
+        return Key.CompareTo(other.Key);
+    }
+}
+
+
+/// <summary>
+/// Doubly-Linked List Data Structure.
+/// </summary>
+/// <typeparam name="T">Type</typeparam>
+public class DLinkedList<TKey, TValue> where TKey : IComparable<TKey>
 {
     /// <summary>
-    /// The Doubly-Linked List Node class.
+    /// Instance variables.
     /// </summary>
-    /// <typeparam name="T">Type</typeparam>
-    public class DLinkedListNode<TKey, TValue> : IComparable<DLinkedListNode<TKey, TValue>> where TKey : IComparable<TKey>
+    private int _count;
+    private DLinkedListNode<TKey, TValue> _firstNode { get; set; }
+    private DLinkedListNode<TKey, TValue> _lastNode { get; set; }
+
+    public virtual DLinkedListNode<TKey, TValue> Head => _firstNode;
+
+    public virtual int Count => _count;
+
+
+    /// <summary>
+    /// Gets the element at the specified index
+    /// </summary>
+    protected virtual DLinkedListNode<TKey, TValue> _getNodeByIndex(int index)
     {
-        private TKey _key;
-        private TValue _value;
-        private DLinkedListNode<TKey, TValue> _next;
-        private DLinkedListNode<TKey, TValue> _previous;
+        if (IsEmpty())
+            throw new IndexOutOfRangeException("List is empty.");
 
-        public DLinkedListNode() : this(default(TKey), default(TValue)) { }
-        public DLinkedListNode(TKey key, TValue value) : this(key, value, null, null) { }
-        public DLinkedListNode(TKey key, TValue value, DLinkedListNode<TKey, TValue> next, DLinkedListNode<TKey, TValue> previous)
+        if (index == 0)
         {
-            Key = key;
-            Value = value;
-            Next = next;
-            Previous = previous;
+            return _firstNode;
         }
 
-        public virtual TKey Key
+        if (index == Count - 1)
         {
-            get { return this._key; }
-            set { this._key = value; }
+            return _lastNode;
         }
 
-        public virtual TValue Value
+        if (index > 0 && index < Count - 1)
         {
-            get { return this._value; }
-            set { this._value = value; }
+            DLinkedListNode<TKey, TValue> currentNode = null;
+
+            // Decide from which reference to traverse the list, and then move the currentNode reference to the index
+            // If index > half then traverse it from the end (_lastNode reference)
+            // Otherwise, traverse it from the beginning (_firstNode refrence)
+            if (index > Count / 2)
+            {
+                currentNode = _lastNode;
+                for (int i = Count - 1; i > index; --i)
+                {
+                    currentNode = currentNode.Previous;
+                }
+            }
+            else
+            {
+                currentNode = _firstNode;
+                for (int i = 0; i < index; ++i)
+                {
+                    currentNode = currentNode.Next;
+                }
+            }
+
+            return currentNode;
         }
 
-        public virtual DLinkedListNode<TKey, TValue> Next
+        throw new IndexOutOfRangeException();
+    }
+
+    /// <summary>
+    /// Gets the element by the specified key
+    /// </summary>
+    protected virtual DLinkedListNode<TKey, TValue> _getNodeByKey(TKey key)
+    {
+        if (key.IsEqualTo(_firstNode.Key))
         {
-            get { return this._next; }
-            set { this._next = value; }
+            return _firstNode;
         }
 
-        public virtual DLinkedListNode<TKey, TValue> Previous
+        if (key.IsEqualTo(_lastNode.Key))
         {
-            get { return this._previous; }
-            set { this._previous = value; }
+            return _lastNode;
         }
 
-        public int CompareTo(DLinkedListNode<TKey, TValue> other)
+        var currentNode = _firstNode;
+        while (currentNode != null)
         {
-            if (other == null) return -1;
+            if (key.IsEqualTo(currentNode.Key))
+                break;
 
-            return this.Key.CompareTo(other.Key);
+            currentNode = currentNode.Next;
+        }
+
+        if (currentNode == null)
+            throw new KeyNotFoundException();
+
+        return currentNode;
+    }
+
+    /// <summary>
+    /// Sets the node's value by index.
+    /// </summary>
+    protected virtual void _setValueByIndex(int index, TValue value)
+    {
+        if (IsEmpty() || index < 0 || index >= Count)
+            throw new IndexOutOfRangeException("List is empty.");
+
+        if (index == 0)
+        {
+            _firstNode.Value = value;
+        }
+        else if (index == Count - 1)
+        {
+            _lastNode.Value = value;
+        }
+        else if (index > 0 && index < Count - 1)
+        {
+            DLinkedListNode<TKey, TValue> currentNode = null;
+
+            // Decide from which reference to traverse the list, and then move the currentNode reference to the index
+            // If index > half then traverse it from the end (_lastNode reference)
+            // Otherwise, traverse it from the beginning (_firstNode refrence)
+            if (index > Count / 2)
+            {
+                currentNode = _lastNode;
+                for (int i = Count - 1; i > index; --i)
+                {
+                    currentNode = currentNode.Previous;
+                }
+            }
+            else
+            {
+                currentNode = _firstNode;
+                for (int i = 0; i < index; ++i)
+                {
+                    currentNode = currentNode.Next;
+                }
+            }
+
+            currentNode.Value = value;
         }
     }
 
-
     /// <summary>
-    /// Doubly-Linked List Data Structure.
+    /// Sets the node's value by key.
     /// </summary>
-    /// <typeparam name="T">Type</typeparam>
-    public class DLinkedList<TKey, TValue> where TKey : IComparable<TKey>
+    protected virtual void _setValueByKey(TKey key, TValue value)
     {
-        /// <summary>
-        /// Instance variables.
-        /// </summary>
-        private int _count;
-        private DLinkedListNode<TKey, TValue> _firstNode { get; set; }
-        private DLinkedListNode<TKey, TValue> _lastNode { get; set; }
+        if (IsEmpty())
+            throw new IndexOutOfRangeException("List is empty.");
 
-        public virtual DLinkedListNode<TKey, TValue> Head
+        if (key.IsEqualTo(_firstNode.Key))
         {
-            get { return this._firstNode; }
+            _firstNode.Value = value;
         }
-
-        public virtual int Count
+        else if (key.IsEqualTo(_lastNode.Key))
         {
-            get { return this._count; }
+            _lastNode.Value = value;
         }
-
-
-        /// <summary>
-        /// Gets the element at the specified index
-        /// </summary>
-        protected virtual DLinkedListNode<TKey, TValue> _getNodeByIndex(int index)
+        else
         {
-            if (IsEmpty())
-                throw new IndexOutOfRangeException("List is empty.");
-
-            if (index == 0)
-            {
-                return _firstNode;
-            }
-
-            if (index == (Count - 1))
-            {
-                return _lastNode;
-            }
-
-            if (index > 0 && index < (Count - 1))
-            {
-                DLinkedListNode<TKey, TValue> currentNode = null;
-
-                // Decide from which reference to traverse the list, and then move the currentNode reference to the index
-                // If index > half then traverse it from the end (_lastNode reference)
-                // Otherwise, traverse it from the beginning (_firstNode refrence)
-                if (index > (Count / 2))
-                {
-                    currentNode = this._lastNode;
-                    for (int i = (Count - 1); i > index; --i)
-                    {
-                        currentNode = currentNode.Previous;
-                    }
-                }
-                else
-                {
-                    currentNode = this._firstNode;
-                    for (int i = 0; i < index; ++i)
-                    {
-                        currentNode = currentNode.Next;
-                    }
-                }
-
-                return currentNode;
-            }
-
-            throw new IndexOutOfRangeException();
-        }
-
-        /// <summary>
-        /// Gets the element by the specified key
-        /// </summary>
-        protected virtual DLinkedListNode<TKey, TValue> _getNodeByKey(TKey key)
-        {
-            if (key.IsEqualTo(_firstNode.Key))
-            {
-                return _firstNode;
-            }
-
-            if (key.IsEqualTo(_lastNode.Key))
-            {
-                return _lastNode;
-            }
-
-            var currentNode = this._firstNode;
+            var currentNode = _firstNode;
             while (currentNode != null)
             {
-                if (key.IsEqualTo(currentNode.Key))
+                if (currentNode.Key.IsEqualTo(key))
                     break;
 
                 currentNode = currentNode.Next;
@@ -158,399 +208,378 @@ namespace DataStructures.Lists
             if (currentNode == null)
                 throw new KeyNotFoundException();
 
-            return currentNode;
+            currentNode.Value = value;
         }
+    }
 
-        /// <summary>
-        /// Sets the node's value by index.
-        /// </summary>
-        protected virtual void _setValueByIndex(int index, TValue value)
+    /// <summary>
+    /// Sets the node object by index.
+    /// </summary>
+    protected virtual void _setNodeByIndex(int index, TKey key, TValue value)
+    {
+        if (IsEmpty() || index < 0 || index >= Count)
+            throw new IndexOutOfRangeException("List is empty.");
+
+        if (index == 0)
         {
-            if (IsEmpty() || index < 0 || index >= Count)
-                throw new IndexOutOfRangeException("List is empty.");
-
-            if (index == 0)
-            {
-                _firstNode.Value = value;
-            }
-            else if (index == (Count - 1))
-            {
-                _lastNode.Value = value;
-            }
-            else if (index > 0 && index < (Count - 1))
-            {
-                DLinkedListNode<TKey, TValue> currentNode = null;
-
-                // Decide from which reference to traverse the list, and then move the currentNode reference to the index
-                // If index > half then traverse it from the end (_lastNode reference)
-                // Otherwise, traverse it from the beginning (_firstNode refrence)
-                if (index > (Count / 2))
-                {
-                    currentNode = this._lastNode;
-                    for (int i = (Count - 1); i > index; --i)
-                    {
-                        currentNode = currentNode.Previous;
-                    }
-                }
-                else
-                {
-                    currentNode = this._firstNode;
-                    for (int i = 0; i < index; ++i)
-                    {
-                        currentNode = currentNode.Next;
-                    }
-                }
-
-                currentNode.Value = value;
-            }
+            _firstNode.Key = key;
+            _firstNode.Value = value;
         }
+        else if (index == Count - 1)
+        {
+            _lastNode.Key = key;
+            _lastNode.Value = value;
+        }
+        else if (index > 0 && index < Count - 1)
+        {
+            DLinkedListNode<TKey, TValue> currentNode = null;
 
-        /// <summary>
-        /// Sets the node's value by key.
-        /// </summary>
-        protected virtual void _setValueByKey(TKey key, TValue value)
+            // Decide from which reference to traverse the list, and then move the currentNode reference to the index
+            // If index > half then traverse it from the end (_lastNode reference)
+            // Otherwise, traverse it from the beginning (_firstNode refrence)
+            if (index > Count / 2)
+            {
+                currentNode = _lastNode;
+                for (int i = Count - 1; i > index; --i)
+                {
+                    currentNode = currentNode.Previous;
+                }
+            }
+            else
+            {
+                currentNode = _firstNode;
+                for (int i = 0; i < index; ++i)
+                {
+                    currentNode = currentNode.Next;
+                }
+            }
+
+            currentNode.Key = key;
+            currentNode.Value = value;
+        }
+    }
+
+
+    /// <summary>
+    /// CONSTRUCTOR
+    /// </summary>
+    public DLinkedList()
+    {
+        _count = 0;
+        _firstNode = null;
+        _lastNode = null;
+    }
+
+    /// <summary>
+    /// Determines whether this List is empty.
+    /// </summary>
+    /// <returns><c>true</c> if this list is empty; otherwise, <c>false</c>.</returns>
+    public virtual bool IsEmpty()
+    {
+        return Count == 0;
+    }
+
+    /// <summary>
+    /// Getter function that returns the first element
+    /// </summary>
+    public virtual KeyValuePair<TKey, TValue> First
+    {
+        get
         {
             if (IsEmpty())
-                throw new IndexOutOfRangeException("List is empty.");
+            {
+                throw new Exception("Empty list.");
+            }
 
-            if (key.IsEqualTo(_firstNode.Key))
+            return new KeyValuePair<TKey, TValue>(_firstNode.Key, _firstNode.Value);
+        }
+    }
+
+    /// <summary>
+    /// Getter function that returns the last element
+    /// </summary>
+    public virtual KeyValuePair<TKey, TValue> Last
+    {
+        get
+        {
+            if (IsEmpty())
             {
-                _firstNode.Value = value;
+                throw new Exception("Empty list.");
             }
-            else if (key.IsEqualTo(_lastNode.Key))
+
+            if (_lastNode == null)
             {
-                _lastNode.Value = value;
-            }
-            else
-            {
-                var currentNode = this._firstNode;
-                while (currentNode != null)
+                var currentNode = _firstNode;
+                while (currentNode.Next != null)
                 {
-                    if (currentNode.Key.IsEqualTo(key))
-                        break;
-
                     currentNode = currentNode.Next;
                 }
-
-                if (currentNode == null)
-                    throw new KeyNotFoundException();
-
-                currentNode.Value = value;
+                _lastNode = currentNode;
             }
+
+            return new KeyValuePair<TKey, TValue>(_lastNode.Key, _lastNode.Value);
         }
+    }
 
-        /// <summary>
-        /// Sets the node object by index.
-        /// </summary>
-        protected virtual void _setNodeByIndex(int index, TKey key, TValue value)
+    /// <summary>
+    /// Returns a list of the keys.
+    /// </summary>
+    public virtual List<TKey> Keys
+    {
+        get
         {
-            if (IsEmpty() || index < 0 || index >= Count)
-                throw new IndexOutOfRangeException("List is empty.");
+            List<TKey> list = new List<TKey>(Count);
 
-            if (index == 0)
+            var currentNode = _firstNode;
+            for (int i = 0; i < Count; ++i)
             {
-                _firstNode.Key = key;
-                _firstNode.Value = value;
-            }
-            else if (index == (Count - 1))
-            {
-                _lastNode.Key = key;
-                _lastNode.Value = value;
-            }
-            else if (index > 0 && index < (Count - 1))
-            {
-                DLinkedListNode<TKey, TValue> currentNode = null;
-
-                // Decide from which reference to traverse the list, and then move the currentNode reference to the index
-                // If index > half then traverse it from the end (_lastNode reference)
-                // Otherwise, traverse it from the beginning (_firstNode refrence)
-                if (index > (Count / 2))
+                if (currentNode != null)
                 {
-                    currentNode = this._lastNode;
-                    for (int i = (Count - 1); i > index; --i)
-                    {
-                        currentNode = currentNode.Previous;
-                    }
+                    list.Add(currentNode.Key);
+                    currentNode = currentNode.Next;
                 }
                 else
                 {
-                    currentNode = this._firstNode;
-                    for (int i = 0; i < index; ++i)
-                    {
-                        currentNode = currentNode.Next;
-                    }
+                    break;
                 }
-
-                currentNode.Key = key;
-                currentNode.Value = value;
             }
+
+            return list;
         }
+    }
 
-
-        /// <summary>
-        /// CONSTRUCTOR
-        /// </summary>
-        public DLinkedList()
+    /// <summary>
+    /// Returns a list of the values.
+    /// </summary>
+    public virtual List<TValue> Values
+    {
+        get
         {
-            _count = 0;
-            _firstNode = null;
-            _lastNode = null;
-        }
+            List<TValue> list = new List<TValue>(Count);
 
-        /// <summary>
-        /// Determines whether this List is empty.
-        /// </summary>
-        /// <returns><c>true</c> if this list is empty; otherwise, <c>false</c>.</returns>
-        public virtual bool IsEmpty()
-        {
-            return (Count == 0);
-        }
-
-        /// <summary>
-        /// Getter function that returns the first element
-        /// </summary>
-        public virtual KeyValuePair<TKey, TValue> First
-        {
-            get
+            var currentNode = _firstNode;
+            for (int i = 0; i < Count; ++i)
             {
-                if (IsEmpty())
+                if (currentNode != null)
                 {
-                    throw new Exception("Empty list.");
-                }
-
-                return new KeyValuePair<TKey, TValue>(_firstNode.Key, _firstNode.Value);
-            }
-        }
-
-        /// <summary>
-        /// Getter function that returns the last element
-        /// </summary>
-        public virtual KeyValuePair<TKey, TValue> Last
-        {
-            get
-            {
-                if (IsEmpty())
-                {
-                    throw new Exception("Empty list.");
-                }
-
-                if (_lastNode == null)
-                {
-                    var currentNode = _firstNode;
-                    while (currentNode.Next != null)
-                    {
-                        currentNode = currentNode.Next;
-                    }
-                    _lastNode = currentNode;
-                }
-
-                return new KeyValuePair<TKey, TValue>(_lastNode.Key, _lastNode.Value);
-            }
-        }
-
-        /// <summary>
-        /// Returns a list of the keys.
-        /// </summary>
-        public virtual List<TKey> Keys
-        {
-            get
-            {
-                List<TKey> list = new List<TKey>(Count);
-
-                var currentNode = _firstNode;
-                for (int i = 0; i < Count; ++i)
-                {
-                    if (currentNode != null)
-                    {
-                        list.Add(currentNode.Key);
-                        currentNode = currentNode.Next;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                return list;
-            }
-        }
-
-        /// <summary>
-        /// Returns a list of the values.
-        /// </summary>
-        public virtual List<TValue> Values
-        {
-            get
-            {
-                List<TValue> list = new List<TValue>(Count);
-
-                var currentNode = _firstNode;
-                for (int i = 0; i < Count; ++i)
-                {
-                    if (currentNode != null)
-                    {
-                        list.Add(currentNode.Value);
-                        currentNode = currentNode.Next;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                return list;
-            }
-        }
-
-        /// <summary>
-        /// Prepend the key-value at the beginning of the list.
-        /// </summary>
-        public virtual void Prepend(TKey key, TValue value)
-        {
-            var newNode = new DLinkedListNode<TKey, TValue>(key, value);
-
-            if (_firstNode == null)
-            {
-                _firstNode = _lastNode = newNode;
-            }
-            else
-            {
-                var currentNode = _firstNode;
-                newNode.Next = currentNode;
-                currentNode.Previous = newNode;
-                _firstNode = newNode;
-            }
-
-            // Increment the count.
-            _count++;
-        }
-
-        /// <summary>
-        /// Append the key-value item at the end of the list.
-        /// </summary>
-        public virtual void Append(TKey key, TValue value)
-        {
-            var newNode = new DLinkedListNode<TKey, TValue>(key, value);
-
-            if (_firstNode == null)
-            {
-                _firstNode = _lastNode = newNode;
-            }
-            else
-            {
-                var currentNode = _lastNode;
-                currentNode.Next = newNode;
-                newNode.Previous = currentNode;
-                _lastNode = newNode;
-            }
-
-            // Increment the count.
-            _count++;
-        }
-
-        /// <summary>
-        /// Inserts the a new key-value item at the specified index.
-        /// </summary>
-        public virtual void InsertAt(int index, TKey key, TValue value)
-        {
-            if (index == 0)
-            {
-                Prepend(key, value);
-            }
-            else if (index == Count)
-            {
-                Append(key, value);
-            }
-            else if (index > 0 && index < Count)
-            {
-                DLinkedListNode<TKey, TValue> currentNode = null;
-                var newNode = new DLinkedListNode<TKey, TValue>(key, value);
-
-                // Decide from which reference to traverse the list, and then move the currentNode reference to the index
-                // If index > half then traverse it from the end (_lastNode reference)
-                // Otherwise, traverse it from the beginning (_firstNode refrence)
-                if (index > (Count / 2))
-                {
-                    currentNode = _lastNode;
-                    for (int i = (Count - 1); i > index - 1; --i)
-                    {
-                        currentNode = currentNode.Previous;
-                    }
+                    list.Add(currentNode.Value);
+                    currentNode = currentNode.Next;
                 }
                 else
                 {
-                    currentNode = this._firstNode;
-                    for (int i = 0; i < index - 1; ++i)
-                    {
-                        currentNode = currentNode.Next;
-                    }
+                    break;
                 }
+            }
 
-                newNode.Next = currentNode.Next;
-                currentNode.Next = newNode;
-                newNode.Previous = currentNode;
+            return list;
+        }
+    }
 
-                // Increment the count
-                _count++;
+    /// <summary>
+    /// Prepend the key-value at the beginning of the list.
+    /// </summary>
+    public virtual void Prepend(TKey key, TValue value)
+    {
+        var newNode = new DLinkedListNode<TKey, TValue>(key, value);
+
+        if (_firstNode == null)
+        {
+            _firstNode = _lastNode = newNode;
+        }
+        else
+        {
+            var currentNode = _firstNode;
+            newNode.Next = currentNode;
+            currentNode.Previous = newNode;
+            _firstNode = newNode;
+        }
+
+        // Increment the count.
+        _count++;
+    }
+
+    /// <summary>
+    /// Append the key-value item at the end of the list.
+    /// </summary>
+    public virtual void Append(TKey key, TValue value)
+    {
+        var newNode = new DLinkedListNode<TKey, TValue>(key, value);
+
+        if (_firstNode == null)
+        {
+            _firstNode = _lastNode = newNode;
+        }
+        else
+        {
+            var currentNode = _lastNode;
+            currentNode.Next = newNode;
+            newNode.Previous = currentNode;
+            _lastNode = newNode;
+        }
+
+        // Increment the count.
+        _count++;
+    }
+
+    /// <summary>
+    /// Inserts the a new key-value item at the specified index.
+    /// </summary>
+    public virtual void InsertAt(int index, TKey key, TValue value)
+    {
+        if (index == 0)
+        {
+            Prepend(key, value);
+        }
+        else if (index == Count)
+        {
+            Append(key, value);
+        }
+        else if (index > 0 && index < Count)
+        {
+            DLinkedListNode<TKey, TValue> currentNode = null;
+            var newNode = new DLinkedListNode<TKey, TValue>(key, value);
+
+            // Decide from which reference to traverse the list, and then move the currentNode reference to the index
+            // If index > half then traverse it from the end (_lastNode reference)
+            // Otherwise, traverse it from the beginning (_firstNode refrence)
+            if (index > Count / 2)
+            {
+                currentNode = _lastNode;
+                for (int i = Count - 1; i > index - 1; --i)
+                {
+                    currentNode = currentNode.Previous;
+                }
             }
             else
             {
-                throw new IndexOutOfRangeException();
-            }
-        }
-
-        /// <summary>
-        /// Inserts the key-value after specified index.
-        /// </summary>
-        public virtual void InsertAfter(int index, TKey key, TValue value)
-        {
-            // Insert at previous index.
-            InsertAt(index - 1, key, value);
-        }
-
-        /// <summary>
-        /// Removes the item at the specified index.
-        /// </summary>
-        public virtual void RemoveAt(int index)
-        {
-            // Handle index out of bound errors
-            if (IsEmpty() || index < 0 || index >= Count)
-                throw new IndexOutOfRangeException();
-
-            // Remove
-            if (index == 0)
-            {
-                _firstNode = _firstNode.Next;
-
-                if (_firstNode != null)
-                    _firstNode.Previous = null;
-
-                // Decrement count.
-                _count--;
-            }
-            else if (index == Count - 1)
-            {
-                _lastNode = _lastNode.Previous;
-
-                if (_lastNode != null)
-                    _lastNode.Next = null;
-
-                // Decrement count.
-                _count--;
-            }
-            else
-            {
-                int i = 0;
-                var currentNode = _firstNode;
-
-                // Get currentNode to reference the element at the index.
-                while (i < index)
+                currentNode = _firstNode;
+                for (int i = 0; i < index - 1; ++i)
                 {
                     currentNode = currentNode.Next;
-                    i++;
-                }//end-while
+                }
+            }
+
+            newNode.Next = currentNode.Next;
+            currentNode.Next = newNode;
+            newNode.Previous = currentNode;
+
+            // Increment the count
+            _count++;
+        }
+        else
+        {
+            throw new IndexOutOfRangeException();
+        }
+    }
+
+    /// <summary>
+    /// Inserts the key-value after specified index.
+    /// </summary>
+    public virtual void InsertAfter(int index, TKey key, TValue value)
+    {
+        // Insert at previous index.
+        InsertAt(index - 1, key, value);
+    }
+
+    /// <summary>
+    /// Removes the item at the specified index.
+    /// </summary>
+    public virtual void RemoveAt(int index)
+    {
+        // Handle index out of bound errors
+        if (IsEmpty() || index < 0 || index >= Count)
+            throw new IndexOutOfRangeException();
+
+        // Remove
+        if (index == 0)
+        {
+            _firstNode = _firstNode.Next;
+
+            if (_firstNode != null)
+                _firstNode.Previous = null;
+
+            // Decrement count.
+            _count--;
+        }
+        else if (index == Count - 1)
+        {
+            _lastNode = _lastNode.Previous;
+
+            if (_lastNode != null)
+                _lastNode.Next = null;
+
+            // Decrement count.
+            _count--;
+        }
+        else
+        {
+            int i = 0;
+            var currentNode = _firstNode;
+
+            // Get currentNode to reference the element at the index.
+            while (i < index)
+            {
+                currentNode = currentNode.Next;
+                i++;
+            }//end-while
 
 
+            // Remove element
+            var newPrevious = currentNode.Previous;
+            var newNext = currentNode.Next;
+            newPrevious.Next = newNext;
+
+            if (newNext != null)
+                newNext.Previous = newPrevious;
+
+            currentNode = newPrevious;
+
+            // Decrement count.
+            _count--;
+        }//end-else
+    }
+
+    /// <summary>
+    /// Removes the item with the specified key.
+    /// </summary>
+    public virtual void RemoveBy(TKey key)
+    {
+        // Remove
+        if (key.IsEqualTo(_firstNode.Key))
+        {
+            _firstNode = _firstNode.Next;
+
+            if (_firstNode != null)
+                _firstNode.Previous = null;
+
+            // Decrement count.
+            _count--;
+        }
+        else if (key.IsEqualTo(_lastNode.Key))
+        {
+            _lastNode = _lastNode.Previous;
+
+            if (_lastNode != null)
+                _lastNode.Next = null;
+
+            // Decrement count.
+            _count--;
+        }
+        else
+        {
+            var currentNode = _firstNode;
+
+            // Get currentNode to reference the element at the index.
+            while (currentNode != null)
+            {
+                if (currentNode.Key.IsEqualTo(key))
+                    break;
+
+                currentNode = currentNode.Next;
+            }//end-while
+
+            if (currentNode != null)
+            {
                 // Remove element
                 var newPrevious = currentNode.Previous;
                 var newNext = currentNode.Next;
@@ -563,277 +592,219 @@ namespace DataStructures.Lists
 
                 // Decrement count.
                 _count--;
-            }//end-else
-        }
-
-        /// <summary>
-        /// Removes the item with the specified key.
-        /// </summary>
-        public virtual void RemoveBy(TKey key)
-        {
-            // Remove
-            if (key.IsEqualTo(_firstNode.Key))
-            {
-                _firstNode = _firstNode.Next;
-
-                if (_firstNode != null)
-                    _firstNode.Previous = null;
-
-                // Decrement count.
-                _count--;
-            }
-            else if (key.IsEqualTo(_lastNode.Key))
-            {
-                _lastNode = _lastNode.Previous;
-
-                if (_lastNode != null)
-                    _lastNode.Next = null;
-
-                // Decrement count.
-                _count--;
             }
             else
             {
-                var currentNode = _firstNode;
+                throw new KeyNotFoundException();
+            }
+        }//end-else
+    }
 
-                // Get currentNode to reference the element at the index.
-                while (currentNode != null)
-                {
-                    if (currentNode.Key.IsEqualTo(key))
-                        break;
+    /// <summary>
+    /// Updates the value of an element at the specified index.
+    /// </summary>
+    public virtual void UpdateValueByIndex(int index, TValue value)
+    {
+        if (IsEmpty() || index < 0 || index >= Count)
+            throw new IndexOutOfRangeException();
 
-                    currentNode = currentNode.Next;
-                }//end-while
+        _setValueByIndex(index, value);
+    }
 
-                if (currentNode != null)
-                {
-                    // Remove element
-                    var newPrevious = currentNode.Previous;
-                    var newNext = currentNode.Next;
-                    newPrevious.Next = newNext;
+    /// <summary>
+    /// Updates the value of an element by it's key.
+    /// </summary>
+    public virtual void UpdateValueByKey(TKey key, TValue value)
+    {
+        if (IsEmpty())
+            throw new IndexOutOfRangeException();
 
-                    if (newNext != null)
-                        newNext.Previous = newPrevious;
+        _setValueByKey(key, value);
+    }
 
-                    currentNode = newPrevious;
+    /// <summary>
+    /// Updates the key and value of an element at the specified index.
+    /// </summary>
+    public virtual void UpdateAtIndex(int index, TKey key, TValue value)
+    {
+        if (IsEmpty() || index < 0 || index >= Count)
+            throw new IndexOutOfRangeException();
 
-                    // Decrement count.
-                    _count--;
-                }
-                else
-                {
-                    throw new KeyNotFoundException();
-                }
-            }//end-else
+        _setNodeByIndex(index, key, value);
+    }
+
+    /// <summary>
+    /// Clears the list.
+    /// </summary>
+    public virtual void Clear()
+    {
+        _count = 0;
+        _firstNode = _lastNode = null;
+    }
+
+    /// <summary>
+    /// Chesk whether the specified key exists in the list.
+    /// </summary>
+    public virtual bool ContainsKey(TKey key)
+    {
+        if (IsEmpty())
+            throw new Exception("List is empty.");
+
+        try
+        {
+            return Find(key).Key.IsEqualTo(key);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Find the specified item in the list.
+    /// </summary>
+    public virtual KeyValuePair<TKey, TValue> Find(TKey key)
+    {
+        if (IsEmpty())
+            throw new Exception("List is empty.");
+
+        var currentNode = _firstNode;
+        while (currentNode != null)
+        {
+            if (currentNode.Key.IsEqualTo(key))
+                break;
+
+            currentNode = currentNode.Next;
         }
 
-        /// <summary>
-        /// Updates the value of an element at the specified index.
-        /// </summary>
-        public virtual void UpdateValueByIndex(int index, TValue value)
-        {
-            if (IsEmpty() || index < 0 || index >= Count)
-                throw new IndexOutOfRangeException();
+        if (currentNode != null)
+            return new KeyValuePair<TKey, TValue>(currentNode.Key, currentNode.Value);
+        throw new KeyNotFoundException("Item was not found.");
+    }
 
-            _setValueByIndex(index, value);
+    /// <summary>
+    /// Find all elements in list that match the predicate.
+    /// </summary>
+    /// <param name="match">Predicate function.</param>
+    /// <returns>List of elements.</returns>
+    public virtual List<KeyValuePair<TKey, TValue>> FindAll(Predicate<TKey> match)
+    {
+        if (IsEmpty())
+            throw new Exception("List is empty.");
+
+        var currentNode = _firstNode;
+        var list = new List<KeyValuePair<TKey, TValue>>();
+
+        while (currentNode != null)
+        {
+            if (match(currentNode.Key))
+                list.Add(new KeyValuePair<TKey, TValue>(currentNode.Key, currentNode.Value));
+
+            currentNode = currentNode.Next;
         }
 
-        /// <summary>
-        /// Updates the value of an element by it's key.
-        /// </summary>
-        public virtual void UpdateValueByKey(TKey key, TValue value)
+        return list;
+    }
+
+    /// <summary>
+    /// Returns a number of elements as specified by countOfElements, starting from the specified index.
+    /// </summary>
+    /// <param name="index">Starting index.</param>
+    /// <param name="countOfElements">The number of elements to return.</param>
+    /// <returns>Doubly-Linked List of elements</returns>
+    public virtual List<KeyValuePair<TKey, TValue>> GetRange(int index, int countOfElements)
+    {
+        DLinkedListNode<TKey, TValue> currentNode = null;
+        List<KeyValuePair<TKey, TValue>> newList = new List<KeyValuePair<TKey, TValue>>();
+
+        // Handle Index out of Bound errors
+        if (Count == 0)
         {
-            if (IsEmpty())
-                throw new IndexOutOfRangeException();
-
-            _setValueByKey(key, value);
-        }
-
-        /// <summary>
-        /// Updates the key and value of an element at the specified index.
-        /// </summary>
-        public virtual void UpdateAtIndex(int index, TKey key, TValue value)
-        {
-            if (IsEmpty() || index < 0 || index >= Count)
-                throw new IndexOutOfRangeException();
-
-            _setNodeByIndex(index, key, value);
-        }
-
-        /// <summary>
-        /// Clears the list.
-        /// </summary>
-        public virtual void Clear()
-        {
-            _count = 0;
-            _firstNode = _lastNode = null;
-        }
-
-        /// <summary>
-        /// Chesk whether the specified key exists in the list.
-        /// </summary>
-        public virtual bool ContainsKey(TKey key)
-        {
-            if (IsEmpty())
-                throw new Exception("List is empty.");
-
-            try
-            {
-                return Find(key).Key.IsEqualTo(key);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Find the specified item in the list.
-        /// </summary>
-        public virtual KeyValuePair<TKey, TValue> Find(TKey key)
-        {
-            if (IsEmpty())
-                throw new Exception("List is empty.");
-
-            var currentNode = _firstNode;
-            while (currentNode != null)
-            {
-                if (currentNode.Key.IsEqualTo(key))
-                    break;
-
-                currentNode = currentNode.Next;
-            }
-
-            if (currentNode != null)
-                return new KeyValuePair<TKey, TValue>(currentNode.Key, currentNode.Value);
-            throw new KeyNotFoundException("Item was not found.");
-        }
-
-        /// <summary>
-        /// Find all elements in list that match the predicate.
-        /// </summary>
-        /// <param name="match">Predicate function.</param>
-        /// <returns>List of elements.</returns>
-        public virtual List<KeyValuePair<TKey, TValue>> FindAll(Predicate<TKey> match)
-        {
-            if (IsEmpty())
-                throw new Exception("List is empty.");
-
-            var currentNode = _firstNode;
-            var list = new List<KeyValuePair<TKey, TValue>>();
-
-            while (currentNode != null)
-            {
-                if (match(currentNode.Key))
-                    list.Add(new KeyValuePair<TKey, TValue>(currentNode.Key, currentNode.Value));
-
-                currentNode = currentNode.Next;
-            }
-
-            return list;
-        }
-
-        /// <summary>
-        /// Returns a number of elements as specified by countOfElements, starting from the specified index.
-        /// </summary>
-        /// <param name="index">Starting index.</param>
-        /// <param name="countOfElements">The number of elements to return.</param>
-        /// <returns>Doubly-Linked List of elements</returns>
-        public virtual List<KeyValuePair<TKey, TValue>> GetRange(int index, int countOfElements)
-        {
-            DLinkedListNode<TKey, TValue> currentNode = null;
-            List<KeyValuePair<TKey, TValue>> newList = new List<KeyValuePair<TKey, TValue>>();
-
-            // Handle Index out of Bound errors
-            if (Count == 0)
-            {
-                return newList;
-            }
-
-            if (index < 0 || index > Count)
-            {
-                throw new IndexOutOfRangeException();
-            }
-
-            // Decide from which reference to traverse the list, and then move the currentNode reference to the index
-            // If index > half then traverse it from the end (_lastNode reference)
-            // Otherwise, traverse it from the beginning (_firstNode refrence)
-            if (index > (Count / 2))
-            {
-                currentNode = this._lastNode;
-                for (int i = (Count - 1); i > index; --i)
-                {
-                    currentNode = currentNode.Previous;
-                }
-            }
-            else
-            {
-                currentNode = this._firstNode;
-                for (int i = 0; i < index; ++i)
-                {
-                    currentNode = currentNode.Next;
-                }
-            }
-
-            // Append the elements to the new list using the currentNode reference
-            while (currentNode != null && newList.Count <= countOfElements)
-            {
-                var keyValue = new KeyValuePair<TKey, TValue>(currentNode.Key, currentNode.Value);
-                newList.Add(keyValue);
-                currentNode = currentNode.Next;
-            }
-
             return newList;
         }
 
-        /// <summary>
-        /// Sorts the entire list using Selection Sort.
-        /// </summary>
-        public virtual void SelectionSort()
+        if (index < 0 || index > Count)
         {
-            if (IsEmpty())
-                return;
+            throw new IndexOutOfRangeException();
+        }
 
-            var currentNode = _firstNode;
-            while (currentNode != null)
+        // Decide from which reference to traverse the list, and then move the currentNode reference to the index
+        // If index > half then traverse it from the end (_lastNode reference)
+        // Otherwise, traverse it from the beginning (_firstNode refrence)
+        if (index > Count / 2)
+        {
+            currentNode = _lastNode;
+            for (int i = Count - 1; i > index; --i)
             {
-                var nextNode = currentNode.Next;
-                while (nextNode != null)
-                {
-                    if (nextNode.Key.IsLessThan(currentNode.Key))
-                    {
-                        var temp = nextNode.Key;
-                        nextNode.Key = currentNode.Key;
-                        currentNode.Key = temp;
-                    }
+                currentNode = currentNode.Previous;
+            }
+        }
+        else
+        {
+            currentNode = _firstNode;
+            for (int i = 0; i < index; ++i)
+            {
+                currentNode = currentNode.Next;
+            }
+        }
 
-                    nextNode = nextNode.Next;
+        // Append the elements to the new list using the currentNode reference
+        while (currentNode != null && newList.Count <= countOfElements)
+        {
+            var keyValue = new KeyValuePair<TKey, TValue>(currentNode.Key, currentNode.Value);
+            newList.Add(keyValue);
+            currentNode = currentNode.Next;
+        }
+
+        return newList;
+    }
+
+    /// <summary>
+    /// Sorts the entire list using Selection Sort.
+    /// </summary>
+    public virtual void SelectionSort()
+    {
+        if (IsEmpty())
+            return;
+
+        var currentNode = _firstNode;
+        while (currentNode != null)
+        {
+            var nextNode = currentNode.Next;
+            while (nextNode != null)
+            {
+                if (nextNode.Key.IsLessThan(currentNode.Key))
+                {
+                    var temp = nextNode.Key;
+                    nextNode.Key = currentNode.Key;
+                    currentNode.Key = temp;
                 }
 
-                currentNode = currentNode.Next;
+                nextNode = nextNode.Next;
             }
-        }
 
-        /// <summary>
-        /// Returns the list items as a readable multi--line string.
-        /// </summary>
-        /// <returns></returns>
-        public virtual string ToReadable()
+            currentNode = currentNode.Next;
+        }
+    }
+
+    /// <summary>
+    /// Returns the list items as a readable multi--line string.
+    /// </summary>
+    /// <returns></returns>
+    public virtual string ToReadable()
+    {
+        string listAsString = string.Empty;
+        int i = 0;
+        var currentNode = _firstNode;
+
+        while (currentNode != null)
         {
-            string listAsString = string.Empty;
-            int i = 0;
-            var currentNode = _firstNode;
-
-            while (currentNode != null)
-            {
-                listAsString = String.Format("{0}[{1}] => {2}\r\n", listAsString, i, currentNode.Key);
-                currentNode = currentNode.Next;
-                ++i;
-            }
-
-            return listAsString;
+            listAsString = String.Format("{0}[{1}] => {2}\r\n", listAsString, i, currentNode.Key);
+            currentNode = currentNode.Next;
+            ++i;
         }
 
+        return listAsString;
     }
 
 }
